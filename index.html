@@ -33,22 +33,22 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline
   <section class="card" aria-labelledby="repair-title">
     <div class="steps"><span class="pill"><strong>01</strong> Choose backups</span><span class="pill"><strong>02</strong> Repair</span><span class="pill"><strong>03</strong> Download</span></div>
     <h2 id="repair-title" style="font-size:21px;margin:0">Select your two backup files</h2>
-    <p class="hint">Choose two different Echo Music <code>.backup</code> files. The old backup supplies <code>song.db</code>; the clean backup supplies <code>setting.preferences_pb</code>.</p>
+    <p class="hint">Choose two different Echo Music <code>.backup</code> files. The old/corrupt backup supplies your library database, while the new/fresh backup supplies the clean settings file needed to make the repaired archive work.</p>
     <div class="field">
       <label for="oldBackup">1. Old / broken backup</label>
-      <p class="hint">The backup containing your original music library.</p>
+      <p class="hint">Use the older backup that contains your original songs, playlists, and library history. This file may not restore correctly on its own, but it provides the old <code>song.db</code> that must be preserved.</p>
       <input id="oldBackup" type="file" accept=".backup,.zip,application/zip,application/octet-stream">
     </div>
     <div class="field">
       <label for="cleanBackup">2. New / clean backup</label>
-      <p class="hint">The backup created after clearing Echo Music's app data and making a fresh backup.</p>
+      <p class="hint">First clear Echo Music's app data, open the clean app, and make a fresh backup. Select that new backup here; it provides the working <code>settings.preferences_pb</code> file.</p>
       <input id="cleanBackup" type="file" accept=".backup,.zip,application/zip,application/octet-stream">
     </div>
     <button class="primary" id="repairButton" type="button">Repair backup</button>
     <div class="status" id="status" role="status" aria-live="polite"></div>
     <div class="result" id="result">
       <strong>Backup packaged successfully</strong>
-      <p class="hint" style="margin:5px 0 0;color:#c4f5d5">The archive contains the old <code>song.db</code> and clean <code>setting.preferences_pb</code>.</p>
+      <p class="hint" style="margin:5px 0 0;color:#c4f5d5">The archive contains the old <code>song.db</code> and clean <code>settings.preferences_pb</code>. Rename the downloaded file to <code>.backup</code> if your browser saved it with a <code>.zip</code> extension.</p>
       <a class="download" id="downloadLink" download="EchoMusic_Fixed.backup" href="#">Download repaired backup</a>
     </div>
     <div class="details">
@@ -118,7 +118,7 @@ button.addEventListener("click", async () => {
       readZip(cleanFile, "clean backup")
     ]);
     const oldSong = findRootFile(oldZip, "song.db");
-    const cleanSettings = findRootFile(cleanZip, "setting.preferences_pb");
+    const cleanSettings = findRootFile(cleanZip, "settings.preferences_pb");
     if (oldSong.error) throw new Error("Old backup: " + oldSong.error);
     if (cleanSettings.error) throw new Error("Clean backup: " + cleanSettings.error);
 
@@ -127,16 +127,16 @@ button.addEventListener("click", async () => {
       cleanSettings.file.async("uint8array")
     ]);
     if (!songData.length) throw new Error("The old backup's song.db is empty.");
-    if (!settingsData.length) throw new Error("The clean backup's setting.preferences_pb is empty.");
+    if (!settingsData.length) throw new Error("The clean backup's settings.preferences_pb is empty.");
 
     // Build a minimal archive containing only the two files specified in the community workaround.
     const output = new JSZip();
     output.file("song.db", songData, { binary: true });
-    output.file("setting.preferences_pb", settingsData, { binary: true });
+    output.file("settings.preferences_pb", settingsData, { binary: true });
     const blob = await output.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
     // Sanity-check the generated archive before exposing the download.
     const verify = await JSZip.loadAsync(blob, { checkCRC32: true });
-    if (!verify.file("song.db") || !verify.file("setting.preferences_pb") || Object.keys(verify.files).filter(n => !verify.files[n].dir).length !== 2) {
+    if (!verify.file("song.db") || !verify.file("settings.preferences_pb") || Object.keys(verify.files).filter(n => !verify.files[n].dir).length !== 2) {
       throw new Error("The generated archive did not pass validation.");
     }
     previousUrl = URL.createObjectURL(blob);
