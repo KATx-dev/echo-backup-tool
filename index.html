@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Echo Music Backup Fixer</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#141b2e;--panel2:#101729;--text:#f3f6ff;--muted:#a8b2ca;--border:#2b3650;--accent:#8b9cff;--accentText:#10152b;--good:#86efac;--bad:#fca5a5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#182443 0,#0b1020 55%);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);min-height:100vh;padding:28px 16px}
+main{max-width:720px;margin:0 auto}.brand{display:inline-flex;align-items:center;gap:9px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}.icon{display:grid;place-items:center;width:35px;height:35px;border:1px solid var(--border);border-radius:11px;background:var(--panel);font-size:19px}
+h1{font-size:clamp(30px,6vw,44px);line-height:1.08;letter-spacing:-.04em;margin:22px 0 12px} .lead{color:var(--muted);max-width:580px;margin:0 0 24px}
+.card{border:1px solid var(--border);background:rgba(20,27,46,.94);border-radius:20px;padding:clamp(18px,4vw,28px);box-shadow:0 20px 70px #0002}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}.pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:12px}.pill strong{color:var(--text)}
+.field{margin:18px 0}.field label{display:block;font-weight:700;margin-bottom:5px}.hint{color:var(--muted);font-size:13px;margin:0 0 10px}
+input[type=file]{display:block;width:100%;max-width:100%;font:inherit;font-size:14px;color:var(--muted);padding:12px;border:1px dashed #465372;border-radius:12px;background:var(--panel2)}
+input[type=file]::file-selector-button{border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-right:12px;background:#222d48;color:var(--text);font-weight:650;cursor:pointer}
+button{font:inherit;font-weight:750;border:0;border-radius:12px;padding:14px 18px;cursor:pointer;min-height:48px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.primary{width:100%;background:var(--accent);color:var(--accentText);margin-top:6px}.primary:disabled{opacity:.55;cursor:wait}
+.status{display:none;margin-top:16px;border-radius:12px;padding:12px 14px;background:var(--panel2);border:1px solid var(--border);overflow-wrap:anywhere}.status.show{display:block}.status.good{color:var(--good)}.status.bad{color:var(--bad)}
+.result{display:none;margin-top:16px;padding:16px;border:1px solid #286347;border-radius:14px;background:#10251e}.result.show{display:block}.download{display:block;text-align:center;text-decoration:none;background:var(--good);color:#062516;padding:13px 16px;border-radius:10px;font-weight:800;margin-top:12px}
+.details{display:grid;grid-template-columns:1fr;gap:10px;margin-top:20px}.detail{padding:14px;border-radius:12px;background:var(--panel2);border:1px solid var(--border)}.detail strong{display:block;margin-bottom:3px}.detail span{font-size:13px;color:var(--muted)}
+.notice{font-size:13px;color:var(--muted);border-top:1px solid var(--border);padding-top:16px;margin-top:22px}.notice strong{color:var(--text)}code{font-size:.92em;background:#222d48;padding:2px 5px;border-radius:5px;overflow-wrap:anywhere}.footer{text-align:center;color:var(--muted);font-size:12px;margin:18px 0}
+@media(min-width:560px){.details{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><span class="icon" aria-hidden="true">♫</span> Community utility</div>
+  <h1>Echo Music<br>Backup Fixer</h1>
+  <p class="lead">Combine your old song database with settings from a fresh backup. Your files are processed locally in this browser and are not uploaded.</p>
+  <section class="card" aria-labelledby="repair-title">
+    <div class="steps"><span class="pill"><strong>01</strong> Choose backups</span><span class="pill"><strong>02</strong> Repair</span><span class="pill"><strong>03</strong> Download</span></div>
+    <h2 id="repair-title" style="font-size:21px;margin:0">Select your two backup files</h2>
+    <p class="hint">Choose two different Echo Music <code>.backup</code> files. The old backup supplies <code>song.db</code>; the clean backup supplies <code>setting.preferences_pb</code>.</p>
+    <div class="field">
+      <label for="oldBackup">1. Old / broken backup</label>
+      <p class="hint">The backup containing your original music library.</p>
+      <input id="oldBackup" type="file" accept=".backup,.zip,application/zip,application/octet-stream">
+    </div>
+    <div class="field">
+      <label for="cleanBackup">2. New / clean backup</label>
+      <p class="hint">The backup created after clearing Echo Music's app data and making a fresh backup.</p>
+      <input id="cleanBackup" type="file" accept=".backup,.zip,application/zip,application/octet-stream">
+    </div>
+    <button class="primary" id="repairButton" type="button">Repair backup</button>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    <div class="result" id="result">
+      <strong>Backup packaged successfully</strong>
+      <p class="hint" style="margin:5px 0 0;color:#c4f5d5">The archive contains the old <code>song.db</code> and clean <code>setting.preferences_pb</code>.</p>
+      <a class="download" id="downloadLink" download="EchoMusic_Fixed.backup" href="#">Download repaired backup</a>
+    </div>
+    <div class="details">
+      <div class="detail"><strong>🔒 Private by design</strong><span>All archive processing stays in this browser tab. Nothing is sent to a server.</span></div>
+      <div class="detail"><strong>🧰 Beta workaround</strong><span>This tool applies the community repair method; it cannot guarantee every backup will work.</span></div>
+    </div>
+    <div class="notice"><strong>Before restoring:</strong> Keep both original backups. This tool creates a separate output file and never overwrites your originals. If the app's backup format changes, the workaround may stop working.</div>
+  </section>
+  <p class="footer">Echo Music Backup Fixer · Community-made, unofficial tool</p>
+</main>
+<script type="module">
+import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
+
+const oldInput = document.getElementById("oldBackup");
+const cleanInput = document.getElementById("cleanBackup");
+const button = document.getElementById("repairButton");
+const statusBox = document.getElementById("status");
+const resultBox = document.getElementById("result");
+const downloadLink = document.getElementById("downloadLink");
+let previousUrl = null;
+
+function setStatus(message, type = "") {
+  statusBox.textContent = message;
+  statusBox.className = "status show" + (type ? " " + type : "");
+}
+function findRootFile(zip, wanted) {
+  // Accept either a root-level file or a file nested in a single directory.
+  const matches = Object.keys(zip.files).filter(name =>
+    !zip.files[name].dir && name.split("/").pop() === wanted
+  );
+  if (matches.length === 0) return { error: `Could not find ${wanted}.` };
+  if (matches.length > 1) return { error: `Found multiple copies of ${wanted}; refusing to guess which one to use.` };
+  return { name: matches[0], file: zip.files[matches[0]] };
+}
+async function readZip(file, label) {
+  try {
+    return await JSZip.loadAsync(file, { checkCRC32: true });
+  } catch (error) {
+    throw new Error(`Could not open the ${label}. Make sure it is a valid ZIP-based .backup file. (${error.message || "Invalid archive"})`);
+  }
+}
+button.addEventListener("click", async () => {
+  resultBox.classList.remove("show");
+  if (previousUrl) { URL.revokeObjectURL(previousUrl); previousUrl = null; }
+  downloadLink.removeAttribute("href");
+  const oldFile = oldInput.files[0];
+  const cleanFile = cleanInput.files[0];
+  if (!oldFile || !cleanFile) {
+    setStatus("Please select both the old backup and the new clean backup.", "bad");
+    return;
+  }
+  if (oldFile === cleanFile || (oldFile.name === cleanFile.name && oldFile.size === cleanFile.size && oldFile.lastModified === cleanFile.lastModified)) {
+    setStatus("These appear to be the same file. Please choose two different backups.", "bad");
+    return;
+  }
+  if (!oldFile.size || !cleanFile.size) {
+    setStatus("One of the selected files is empty. Please select valid backups.", "bad");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Checking and repairing…";
+  setStatus("Opening both archives and checking for the required files. Larger backups may take a moment.");
+  try {
+    const [oldZip, cleanZip] = await Promise.all([
+      readZip(oldFile, "old backup"),
+      readZip(cleanFile, "clean backup")
+    ]);
+    const oldSong = findRootFile(oldZip, "song.db");
+    const cleanSettings = findRootFile(cleanZip, "setting.preferences_pb");
+    if (oldSong.error) throw new Error("Old backup: " + oldSong.error);
+    if (cleanSettings.error) throw new Error("Clean backup: " + cleanSettings.error);
+
+    const [songData, settingsData] = await Promise.all([
+      oldSong.file.async("uint8array"),
+      cleanSettings.file.async("uint8array")
+    ]);
+    if (!songData.length) throw new Error("The old backup's song.db is empty.");
+    if (!settingsData.length) throw new Error("The clean backup's setting.preferences_pb is empty.");
+
+    // Build a minimal archive containing only the two files specified in the community workaround.
+    const output = new JSZip();
+    output.file("song.db", songData, { binary: true });
+    output.file("setting.preferences_pb", settingsData, { binary: true });
+    const blob = await output.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
+    // Sanity-check the generated archive before exposing the download.
+    const verify = await JSZip.loadAsync(blob, { checkCRC32: true });
+    if (!verify.file("song.db") || !verify.file("setting.preferences_pb") || Object.keys(verify.files).filter(n => !verify.files[n].dir).length !== 2) {
+      throw new Error("The generated archive did not pass validation.");
+    }
+    previousUrl = URL.createObjectURL(blob);
+    downloadLink.href = previousUrl;
+    resultBox.classList.add("show");
+    setStatus(`Repair package created and validated. Output size: ${blob.size.toLocaleString()} bytes. No files were uploaded.`, "good");
+  } catch (error) {
+    setStatus(error.message || "Something went wrong while processing the backups.", "bad");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Repair backup";
+  }
+});
+</script>
+</body>
+</html>
